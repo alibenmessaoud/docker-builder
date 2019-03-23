@@ -1,12 +1,16 @@
 # docker-builder
 
-###### Using Maven from Docker 
+#### Introduction
 
-If you have been paying attention, the Dockerfiles are used to run applications that had been already compiled. This means that the machine that creates the Docker image needs to have a development environment as well (in our case a JDK and Maven).
+If you have been paying attention, the Dockerfiles are used to run applications that had been already compiled. This means that the machine that creates the Docker image needs to have a development environment as well (in our case a JDK and Maven or Node.JS and NPM).
 
-In this example, we will allow Docker to build project source on a host machine by taking control on Maven :-). This means that Docker calls Maven commands from within a Docker container. While most people think Docker as a deployment format for the application itself, in reality, Docker can be used for the build process as well (i.e. tooling via Docker)
+In this example, we will allow Docker to build project source on a host machine by taking control on Maven and NPM. For a Java app, this means that Docker calls Maven commands from within a Docker container. For a JS app, Docker calls NPM commands from within a Docker container. 
 
-The app is simple project: 
+While most people think Docker as a deployment format for the application itself, in reality, Docker can be used for the build process as well (i.e. tooling via Docker)
+
+##### Using Maven from Docker 
+
+The Java project has the following structure: 
 
 ```
 ├── Dockerfile
@@ -28,16 +32,13 @@ The app is simple project:
 
 ```
 
-To build the image:
+Build the image: `docker build -t ijava_app .` 
 
-`docker build -t cool_app .` 
+Run the container based on the image: `docker run --name cjava_app -p 90:8080 ijava_app`
 
-To run the container based on the image named `cool_app`
-
-`docker run -it a01 -p 8080:8080 sh`
+Run curl to test `curl http://localhost:90/greeting` to see `{"content":"Hello, World!"}`
 
 ```bash
-
   .   ____          _            __ _ _
  /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
 ( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
@@ -54,35 +55,75 @@ To run the container based on the image named `cool_app`
 Dockerfile
 
 ```dockerfile
-## Prepare env to build sources
-# =============================================
-# Start with a base image containing Maven and Java runtime for build
 FROM maven:3.5.2-jdk-8-alpine AS MAVEN_TOOL_CHAIN
 
-# Add Maintainer Info
 LABEL maintainer="app.io"
 
-# Copy sources
 COPY pom.xml /tmp/
 COPY src /tmp/src/
 WORKDIR /tmp/
 
-# Build and package app
 RUN mvn package
 
-## Run app after building sources
-# =============================================
-# Start with a base image containing Java runtime for run
 FROM openjdk:8-jdk-alpine
 
-# The application's jar file
 COPY --from=MAVEN_TOOL_CHAIN /tmp/target/io-app-service*.jar app.jar
 
-# Java env varaibles
 ENV JAVA_OPTS=""
-# Make port 8080 available to the world outside this container
+
 EXPOSE 8080
 
-# Run the jar file
 ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app.jar
 ```
+
+##### Using Node from Docker
+
+The JS project has the following structure:
+
+```bash
+├── app.js
+├── Dockerfile
+├── package.json
+└── views
+    ├── css
+    │   └── styles.css
+    ├── index.html
+    └── sharks.html
+
+```
+
+Build the image: `docker build -t inode_app .` 
+
+Run the container based on the image: `docker run --name cnode_app -p 91:8080 inode_app`
+
+Run curl to test `curl http://localhost:91/greeting` to see `{"content":"Hello, World!"}`
+
+```sh
+Example app listening on port 8080!
+/GET
+```
+
+Docker
+
+```dockerfile
+FROM node:10-alpine
+
+RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
+
+WORKDIR /home/node/app
+
+COPY package*.json ./
+
+USER node
+
+RUN npm install
+
+COPY --chown=node:node . .
+
+EXPOSE 8080
+
+CMD [ "node", "app.js" ]
+```
+
+
+

@@ -1,0 +1,16 @@
+{
+  "name": "node-app",
+  "version": "1.0.0",
+  "description": "nodejs image demo",
+  "author": "Ali Ben Messaoud <mail2alibm@gmail.com>",
+  "license": "MIT",
+  "main": "app.js",
+  "keywords": [
+    "nodejs",
+    "bootstrap",
+    "express"
+  ],
+  "dependencies": {
+    "express": "^5.0.0-alpha.7"
+  }
+}
